@@ -1,0 +1,127 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx-deployment
+  labels:
+    app: nginx-label
+    
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: nginx-label
+
+  template:
+    metadata:
+      labels:
+        app: nginx-label
+
+    spec:
+      strategy:
+        rollingUpdate:
+          maxSurge: 25%
+          maxUnavailable: 25%
+        type: RollingUpdate
+        
+      restartPolicy: Always
+
+      volumes:
+      - name: mysql-persistent-storage
+        persistentVolumeClaim:
+          claimName: mysql-pv-claim
+        # All data from Config Map
+      - name: config-volume-all-from-game-config
+        configMap:
+          # Provide the name of the ConfigMap containing the files you want
+          # to add to the container
+          name: game-config
+        # Specific data item form Config Map
+      - name: config-volume-ui-properties
+        configMap:
+          name: game-config
+          items:
+          - key: ui.properties
+            path: ui.properties
+
+      containers:
+      - name: nginx-pod
+
+        image: nginx:latest
+        imagePullPolicy: IfNotPresent
+
+        resources:
+          limits:
+            cpu: 250m
+            memory: 64Mi
+          requests:
+            cpu: 125m
+            memory: 32Mi
+        
+
+        env:
+        - name: NAME 
+          value: "VALUE"
+        - name: MY_NODE_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: spec.nodeName
+        - name: USER1
+          valueFrom:
+            configMapKeyRef:
+              name: users-cm # The ConfigMap containing the value you want to assign to SPECIAL_LEVEL_KEY
+              key: user1 # Specify the key associated with the value
+        # Define all of the ConfigMap’s data as container environment variables
+        envFrom:
+          - configMapRef:
+          name: configmap-name
+        # Mounting Volume inside Container
+        volumeMounts:
+        - name: config-volume-all-from-game-config
+          mountPath: /etc/config
+
+
+        ports:
+        - containerPort: 80
+        volumeMounts:
+        - name: mysql-persistent-storage
+          mountPath: /var/lib/mysql
+
+
+        command: ['echo', '${DEMO_GREETING}']
+
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: 8080
+            httpHeaders:
+            - name: Custom-Header
+              value: Awesome
+          initialDelaySeconds: 3
+          periodSeconds: 3
+          
+          exec:
+            command:
+            - cat
+            - /tmp/healthy
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        
+        readinessProbe:
+          httpGet:
+            path: /healthx
+            port: 5000
+          initialDelaySeconds: 3
+          periodSeconds: 10
+          successThreshold: 1
+          timeoutSeconds: 2
+        
+      initContainers:
+      - name: init-myservice
+        image: busybox:1.28
+        command: ["/bin/sh", "-c"]
+        args:
+        - |-
+          cat << END > /html/index.html
+          END          
+
+

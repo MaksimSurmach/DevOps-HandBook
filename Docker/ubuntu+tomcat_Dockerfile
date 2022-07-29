@@ -1,0 +1,10 @@
+FROM ubuntu:latest
+  
+RUN mkdir /opt/tomcat/ && \
+        apt-get -y update && \
+        apt-get -y install openjdk-8-jdk wget && \
+        wget https://archive.apache.org/dist/tomcat/tomcat-10/v10.0.14/bin/apache-tomcat-10.0.14.tar.gz -O /opt/tomcat/tomcat.tar.gz && \
+        tar xvfz /opt/tomcat/tomcat.tar.gz -C /opt/tomcat --strip-components=1
+
+EXPOSE 8080
+CMD /opt/tomcat/bin/catalina.sh run

@@ -1,0 +1,111 @@
+## Getting Cluster Info
+kubectl cluster-info
+
+## Getting Cluster members
+kubectl get nodes
+kubectl get nodes -o wide
+
+
+#https://kubernetes.io/docs/concepts/overview/what-is-kubernetes/
+#https://kubernetes.io/docs/concepts/
+
+kubectl get namespaces
+
+kubectl get namespaces --show-labels
+kubectl get ns ${NS_NAME}
+kubectl describe ns ${NS_NAME}
+
+
+## For default Namespace:
+$ kubectl get pods
+$ kubectl get deployment
+
+## Working with other namespaces:
+$ kubectl get pods -n ${NS_NAME}
+$ kubectl get rs -n ${NS_NAME}
+$ kubectl get all -n ${NS_NAME}
+
+## Getting Pods from All Namespaces:
+$ kubectl get pods -A
+$ kubectl get pods --all-namespaces
+
+kubectl get po
+kubectl get pod
+kubectl get pods
+kubectl get pods --all-namespaces
+kubectl get pods -A
+kubectl get pods -n ${NS_NAME}
+kubectl get pods ${POD_NAME}
+kubectl get pods ${POD_NAME} -n ${NS_NAME}
+kubectl get pods ${POD_NAME} -o yaml
+kubectl get pods ${POD_NAME} -o wide
+
+kubectl describe pods ${POD_NAME} 
+kubectl describe pods ${POD_NAME} -n ${NS_NAME} 
+
+kubectl apply -f pod-manifest.yaml
+kubectl delete -f pod-manifest.yaml
+
+kubectl run ${POD_NAME} [-n ${NS_NAME}] --image=${POD_IMAGE}
+kubectl run ${POD_NAME} [-n ${NS_NAME}] --image=${POD_IMAGE} -- {command}
+kubectl run ${POD_NAME} [-n ${NS_NAME}] --image=${POD_IMAGE} --command {command}
+
+
+kubectl apply -f deployment.yaml
+kubectl get deploy
+kubectl get deploy --show-labels
+kubectl get deploy -n ${NS_NAME}
+kubectl get deploy -o yaml
+kubectl describe deploy -n ${NS_NAME}
+kubectl delete deploy ${NS_NAME}
+
+
+k get pod -n wonderland -o custom-columns='POD:metadata.name,IP:status.podIP,NODE:spec.nodeName'
+
+$ kubectl get pod {pod_name} -o yaml > pod.yaml
+$ vim pod.yaml
+$ kubectl delete -f pod.yaml
+$ kubectl apply -f pod.yaml
+
+k run redis --image redis:123 --namespace default --dry-run=client -o yaml
+
+
+#delete
+
+kubectl delete pod foo --grace-period=1
+kubectl delete -f ./pod.json
+kubectl delete pod foo --now
+kubectl delete pod foo --force
+kubectl delete pods --all
+
+
+#deploy
+
+kubectl create deployment my-dep --image=nginx --replicas=3 --dry-run=client -o yaml
+
+kubectl set image deployment/nginx busybox=busybox nginx=nginx:1.9.1
+kubectl set image {RESOURCE_TYPE}/{RESOURCE_NAME} {CONTAINER_NAME}={NEW_IMAGE}
+
+kubectl rollout undo deploy nginx-deploy
+
+#service
+
+kubectl get svc
+kubectl get svc -o wide
+kubectl get svc --all-namespaces
+kubectl describe svc -n <<namespace name>> <<service name>>
+kubectl get svc -n <<namespace name>> <<service name>> -o yaml
+
+kubectl get ep
+kubectl describe ep -n <<namespace name>> <<service name>>
+
+kubectl expose deployment <<deployment name>> \
+  -n <<namespace name>> \
+  --name <<svc name>> \
+  --type <<svc type>> \
+  --port <<svc port>> \
+  --target-port <<svc targetPort == pod container port>>
+
+  NSlookup
+
+kubectl run --rm -it test --image=busybox:1.27 --restart=Never nslookup ${SERVICE}
