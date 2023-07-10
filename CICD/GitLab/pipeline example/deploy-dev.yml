@@ -1,0 +1,51 @@
+# dev stage
+dev:deploy:
+  stage: dev
+  extends:
+    - .helm_job_deploy
+    - .only-develop
+  environment:
+    name: dev
+    on_stop: dev:destroy
+    url: https://psd-dev.apps.pttep.com/v1/backend/
+  variables:
+    APP_ENV: dev
+    K8S_NAMESPACE: "sw-$PRODUCT_NAME-$CI_ENVIRONMENT_NAME"
+    VALUES: values-dev
+    ESP_SERVICE_ACCOUNT_SECRET: esp-sa-dev
+    #DB_CONNSTRING_SECRET: pds-db-connstring-dev
+    DB_CREDENTIALS_SECRET: psd_psd_dev_psd_dev_usr_devqa
+    PSD_SERVICE_ACCOUNT_SECRET: psd-sa-dev
+    SERVER_CA_POSTGRESQL_SECRET: server-ca-postgresql-dev
+    CLIENT_CERT_POSTGRESQL_SECRET: client-cert-postgresql-dev
+    CLIENT_KEY_POSTGRESQL_SECRET: client-key-postgresql-secret-dev
+
+dev:destroy:
+  stage: dev
+  extends:
+    - .helm_job_destroy
+    - .only-develop
+  environment:
+    name: dev
+    action: stop
+  when: manual
+  variables:
+    APP_ENV: dev
+    K8S_NAMESPACE: "sw-$PRODUCT_NAME-$CI_ENVIRONMENT_NAME"
+    PROJECT_IMAGE_NAME: "$PROJECT_IMAGE_NAME"
+    PROJECT_IMAGE_VERSION: "$CI_PIPELINE_IID"
+
+dev:rollback:
+  stage: dev
+  extends:
+    - .helm_job_rollback
+    - .only-develop
+  environment:
+    name: dev
+    action: stop
+  when: manual
+  variables:
+    APP_ENV: dev
+    K8S_NAMESPACE: "sw-$PRODUCT_NAME-$CI_ENVIRONMENT_NAME"
+    PROJECT_IMAGE_NAME: "$PROJECT_IMAGE_NAME"
+    PROJECT_IMAGE_VERSION: "$CI_PIPELINE_IID"

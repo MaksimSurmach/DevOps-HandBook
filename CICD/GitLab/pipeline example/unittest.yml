@@ -1,0 +1,19 @@
+# unittest stage
+unit_tests:
+  image: docker:19.03.3-dind
+  services:
+    - name: docker:19.03.3-dind
+      command: ["--insecure-registry=$REGIP1", "--insecure-registry=$REGIP1"]
+  stage: unittest
+  script:
+    - echo "Run unit tests and generate report"
+    - docker run -t -v "$(pwd):/app" golang:1.17.6-buster /bin/sh -c "cd /app && go test ./... -coverprofile=coverage.out"
+  environment:
+    name: dev
+  allow_failure: true
+  artifacts:
+    paths:
+      - coverage.out
+    expire_in: 1 hour
+  extends:
+    - .only-develop # Rules for only develop and except master

@@ -1,0 +1,47 @@
+# authentification on k8s
+.k8s_auth: &k8s_auth
+  - cat $GCP_PROJECT_SERVICE_KEY_GKE | base64 -d > ${HOME}/gcloud-k8s-key.json
+  - gcloud auth activate-service-account --key-file ${HOME}/gcloud-k8s-key.json
+  - gcloud container clusters get-credentials ${GKE_CLUSTER} --zone ${GCP_ZONE} --project ${GCP_PROJECT_ID_GKE}
+
+# Authenticate on GCP Project of application
+.gcp_auth: &gcp_auth
+  - cat $GCP_PROJECT_SERVICE_KEY_APP | base64 -d > ${HOME}/gcloud-project-key.json
+  - gcloud auth activate-service-account --key-file ${HOME}/gcloud-project-key.json
+
+# Work with sensetive data from GCP secret manager, using GCLOUD_PROJECT_ID's secret ready only service account
+.replace_secrets: &replace_secrets
+  - DB_CREDENTIALS=$(gcloud secrets versions access latest --secret=${DB_CREDENTIALS_SECRET} --project=${GCP_PROJECT_ID_APP})
+  - 'sed -i -e "s|{db-credentials}|$DB_CREDENTIALS|g" ./deployments/kubernetes/helm/$VALUES.yaml'
+  # replace other secrets to helm values
+
+# Deploy template
+.helm_job_deploy:
+  image: $HELM_IMAGE
+  before_script:
+    - *gcp_auth
+    - *replace_secrets
+    - *k8s_auth
+    - 'sed -i -e "s/appVersion: 0.1.0/appVersion: $PROJECT_IMAGE_VERSION/g" ./deployments/kubernetes/helm/Chart.yaml'
+  script:
+    - echo "Deploy by $GITLAB_USER_NAME < $GITLAB_USER_EMAIL >"
+    - echo "Deploy on $APP_ENV environment $PROJECT_IMAGE_NAME:$PROJECT_IMAGE_VERSION to GKE cluster - ${GKE_CLUSTER} "
+    - helm upgrade --install -f ./deployments/kubernetes/helm/$VALUES.yaml ${PROJECT_NAME} ./deployments/kubernetes/helm -n $K8S_NAMESPACE
+
+# Destroy template
+.helm_job_destroy:
+  image: $HELM_IMAGE
+  before_script:
+    - *k8s_auth
+  script:
+    - echo "Destroy on $APP_ENV environment $PROJECT_IMAGE_NAME:$PROJECT_IMAGE_VERSION"
+    - helm uninstall ${PROJECT_NAME} -n $K8S_NAMESPACE
+
+# Rollback template
+.helm_job_rollback:
+  image: $HELM_IMAGE
+  before_script:
+    - *k8s_auth
+  script:
+    - echo "Rollback on $APP_ENV environment $PROJECT_IMAGE_NAME:$PROJECT_IMAGE_VERSION to previous version"
+    - helm rollback ${PROJECT_NAME} -n $K8S_NAMESPACE

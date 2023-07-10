@@ -1,0 +1,26 @@
+build:docker:
+  stage: build
+  environment:
+    name: dev
+  variables:
+    VERSION: "dev"
+  image: $DOCKER_IMAGE
+  script:
+    - CUR_TIME=$(date +'%Y-%m-%d %T')
+    - echo "Build Docker image v$PROJECT_VERSION at $CUR_TIME"
+    - docker build --no-cache 
+      --build-arg BUILD_TIME="$CUR_TIME" 
+      --build-arg APP_VERSION=$PROJECT_VERSION 
+      --build-arg GIT_REVISION=$CI_COMMIT_SHORT_SHA 
+      --build-arg env=$CI_ENVIRONMENT_NAME 
+      --build-arg git_config=$GIT_SPECIFIC_OAUTH2 
+      -t "$PROJECT_IMAGE_NAME:$PROJECT_IMAGE_VERSION" 
+      -f build/package/Dockerfile .
+    - docker images
+    - cat $SA_GCR | base64 -d | docker login -u _json_key --password-stdin https://asia.gcr.io
+    - docker push $PROJECT_IMAGE_NAME:$PROJECT_IMAGE_VERSION
+    - docker tag $PROJECT_IMAGE_NAME:$PROJECT_IMAGE_VERSION $PROJECT_IMAGE_NAME:$CI_COMMIT_SHORT_SHA
+    - docker push $PROJECT_IMAGE_NAME:$CI_COMMIT_SHORT_SHA
+  extends:
+    - .only-develop
+    

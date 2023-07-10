@@ -1,0 +1,45 @@
+prd:deploy:
+  stage: prd
+  extends:
+    - .helm_job_deploy
+    - .only-tags
+  environment:
+    name: prd
+    on_stop: prd:destroy
+    url: $PROD_URL
+  when: manual
+  allow_failure: false
+  variables:
+    APP_ENV: prd
+    K8S_NAMESPACE: "$PRODUCT_NAME"
+    VALUES: values-prd
+
+prd:destroy:
+  stage: prd
+  extends:
+    - .helm_job_destroy
+    - .only-tags
+  environment:
+    name: prd
+    action: stop
+  when: manual
+  variables:
+    APP_ENV: prd
+    K8S_NAMESPACE: "$PRODUCT_NAME"
+    PROJECT_IMAGE_NAME: "$PROJECT_RELEASE_IMAGE_NAME"
+    PROJECT_IMAGE_VERSION: "$CI_COMMIT_TAG"
+
+prd:rollback:
+  stage: prd
+  extends:
+    - .helm_job_rollback
+    - .only-tags
+  environment:
+    name: prd
+    action: stop
+  when: manual
+  variables:
+    APP_ENV: prd
+    K8S_NAMESPACE: "$PRODUCT_NAME"
+    PROJECT_IMAGE_NAME: "$PROJECT_RELEASE_IMAGE_NAME"
+    PROJECT_IMAGE_VERSION: "$CI_COMMIT_TAG"

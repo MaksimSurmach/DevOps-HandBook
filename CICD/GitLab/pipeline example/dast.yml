@@ -1,0 +1,24 @@
+# Dynamic Application Security Scanning
+.security_job_template: &security_job_dast
+  script:
+    - echo "Dynatic Application Security Testing"
+    - docker run -t --add-host $ADD_HOST owasp/zap2docker-stable zap-baseline.py -t $APPLICATION
+
+# dast stage
+qa:dast:
+  image: docker:19.03.3-dind
+  services:
+    - name: docker:19.03.3-dind
+      command: ["--insecure-registry=$REGIP1", "--insecure-registry=$REGIP2"]
+  stage: dast
+  <<: *security_job_dast
+  environment:
+    name: qa
+  allow_failure: true
+  variables:
+    APPLICATION: $APPLICATION_URL
+    ADD_HOST: $ADD_HOST
+  artifacts:
+    paths: [gl-dast-report.json]
+  extends:
+    - .only-develop

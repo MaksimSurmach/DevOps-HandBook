@@ -1,0 +1,76 @@
+default:
+  tags:
+    - $RUNNER_TAG
+
+image: docker:19.03.3-dind
+services:
+  - name: docker:19.03.3-dind
+    command: ["--insecure-registry=$REGIP1", "--insecure-registry=$REGIP2"]
+
+stages:
+  - unittest # run unit test
+
+  - sast
+  # Local ref: run from include '/build/ci/docker-build.yml'
+  # unit test run before run the build process
+  # - test
+  # run build process based docker file
+  - build
+  # container image security scan
+  - container-image-scan
+  # build:docker
+  - dev
+  # dev:deploy
+  # MANUAL  dev:destroy
+  - qa
+  # MANUAL  qa:deploy
+  # MANUAL  qa:destroy
+  - dast
+  - uat
+  - prd
+
+variables:
+  PRODUCT_NAME: "PRODUCT_NAME"
+  PROJECT_NAME: "PROJECT_NAME"
+
+  PROJECT_IMAGE_NAME: "asia.gcr.io/$GCP_PROJECT_ID_GCR/$PRODUCT_NAME/$PROJECT_NAME"
+  PROJECT_IMAGE_VERSION: "$CI_PIPELINE_IID"
+  PROJECT_RELEASE_IMAGE_NAME: "asia.gcr.io/$GCP_RELEASE_GCR/$PRODUCT_NAME/$PROJECT_NAME"
+  PROJECT_RELEASE_IMAGE_VERSION: "$CI_COMMIT_TAG"
+
+  # Images
+  HELM_IMAGE: "asia.gcr.io/$GCP_GCR/infrastructure/custom-images/helm:latest"
+  DOCKER_IMAGE: "docker:19.03.3-dind"
+  TRIVY_IMAGE: "docker.io/aquasec/trivy:latest"
+
+  #Other variables
+  DOCKER_TLS_CERTDIR: ""
+  DOCKER_DRIVER: overlay2
+  DOCKER_HOST: tcp://localhost:2375
+
+# Rules for only develop and except master
+.only-develop:
+  only:
+    - develop
+  except:
+    - master
+
+# Rules for only tag
+.only-tags:
+  only:
+    - tags
+
+# All steps with logic spread on separate file
+include:
+  - "/build/ci/sast.yml"
+  - "/build/ci/templates.yml"
+  - "/build/ci/docker-build.yml"
+  - "/build/ci/ciss.yml"
+  - "/build/ci/deploy-dev.yml"
+  - "/build/ci/add-docker-tag.yml"
+  - "/build/ci/deploy-qa.yml"
+  - "/build/ci/dast.yml"
+  - "/build/ci/add-docker-release-tag.yml"
+  - "/build/ci/deploy-uat.yml"
+  - "/build/ci/deploy-prd.yml"
+  - "/build/ci/be-unittest.yml"

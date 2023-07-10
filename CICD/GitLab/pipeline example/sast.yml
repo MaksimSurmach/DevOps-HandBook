@@ -1,0 +1,20 @@
+# Security & Code Quality
+.security_job_template: &security_job_sast
+  script:
+    - echo "Static Application Security Testing"
+    - 'sed -i -e "s/SONAR_TOKEN/$SONAR_TOKEN/g" sonar-project.properties'
+    - docker run -t -v "$(pwd):/usr/src" --add-host $SONAR_ADDR sonarsource/sonar-scanner-cli:4.2 sonar-scanner
+
+# security & code quality stage
+sast:
+  image: docker:19.03.3-dind
+  services:
+    - name: docker:19.03.3-dind
+      command: ["--insecure-registry=$REGIP1", "--insecure-registry=$REGIP2"]
+  stage: sast
+  <<: *security_job_sast # import from .security_job_template
+  environment:
+    name: dev # variables env name in gitlab
+  allow_failure: false
+  extends:
+    - .only-develop # Rules for only develop and except master

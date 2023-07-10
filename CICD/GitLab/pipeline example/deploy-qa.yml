@@ -1,0 +1,45 @@
+qa:deploy:
+  stage: qa
+  extends:
+    - .helm_job_deploy
+    - .only-develop
+  environment:
+    name: qa
+    on_stop: qa:destroy
+    url: $QA_URL
+  when: manual
+  allow_failure: false
+  variables:
+    APP_ENV: qa
+    K8S_NAMESPACE: "$PRODUCT_NAME-$CI_ENVIRONMENT_NAME"
+    VALUES: values-qa
+
+qa:destroy:
+  stage: qa
+  extends:
+    - .helm_job_destroy
+    - .only-develop
+  environment:
+    name: qa
+    action: stop
+  when: manual
+  variables:
+    APP_ENV: qa
+    K8S_NAMESPACE: "$PRODUCT_NAME-$CI_ENVIRONMENT_NAME"
+    PROJECT_IMAGE_NAME: "$PROJECT_IMAGE_NAME"
+    PROJECT_IMAGE_VERSION: "$CI_PIPELINE_IID"
+
+qa:rollback:
+  stage: qa
+  extends:
+    - .helm_job_rollback
+    - .only-develop
+  environment:
+    name: qa
+    action: stop
+  when: manual
+  variables:
+    APP_ENV: qa
+    K8S_NAMESPACE: "$PRODUCT_NAME-$CI_ENVIRONMENT_NAME"
+    PROJECT_IMAGE_NAME: "$PROJECT_IMAGE_NAME"
+    PROJECT_IMAGE_VERSION: "$CI_PIPELINE_IID"
